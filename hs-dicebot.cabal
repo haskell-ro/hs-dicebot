@@ -53,5 +53,5 @@ executable hs-dicebot
   -- other-modules:       
   
   -- Other library packages from which modules are imported.
-  build-depends:       base ==4.5.*, irc >= 0.5.1.0
+  build-depends:       base ==4.5.*, network >= 2.4.1.2, irc >= 0.5.1.0
   
