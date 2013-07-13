@@ -9,5 +9,14 @@ data DiceBotCmd =
 
 data Die =
     Const { dieConst :: Int }
-  | Die { dieDie :: Int }
+  | Die { dieNum :: Int, dieType :: Int }
   deriving (Show, Eq)
+
+showDice :: [Die] -> String
+showDice [] = ""
+showDice (d : ds)
+  | null ds = showDie d
+  | otherwise = showDie d ++ " + " ++ showDice ds
+  where
+  showDie (Const n) = show n
+  showDie (Die n t) = show n ++ "d" ++ show t
