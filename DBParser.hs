@@ -25,6 +25,13 @@ roll = do
   eof
   return $ Roll [d]
 
-die = constVal <|> dieVal
-constVal = alphaNum `sepEndBy1` spaces >>= return . Const . read
-dieVal = return $ Die 2 42
+die = try dieVal <|> constVal
+constVal = digit `sepEndBy1` spaces >>= return . Const . read
+dieVal = numDies <|> oneDie
+  where
+  oneDie = char 'd' >> digit `sepEndBy1` spaces >>= return . Die 1 . read
+  numDies = do
+    sn <- many1 digit
+    char 'd'
+    st <- digit `sepEndBy1` spaces
+    return $ Die (read sn) (read st)
