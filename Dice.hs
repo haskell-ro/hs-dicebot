@@ -1,4 +1,4 @@
-module Types where
+module Dice where
 
 data DiceBotCmd =
     Start

@@ -6,7 +6,7 @@ import Text.Printf
 import Control.Monad (forever)
 import qualified Network.IRC as IRC
 
-import Types
+import Dice
 import DBParser
 
 server      = "irc.freenode.org"

@@ -3,7 +3,7 @@ module DBParser where
 
 import Text.Parsec
 
-import Types
+import Dice
 
 parseCmd :: String -> DiceBotCmd
 parseCmd s = case parse cmd "(unknown)" s of
