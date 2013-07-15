@@ -2,6 +2,7 @@ module Dice where
 
 import Control.Monad (liftM)
 import Control.Monad.Random
+import Data.List (intercalate)
 
 data DiceBotCmd =
     Start
@@ -16,19 +17,12 @@ data Die =
   deriving (Show, Eq)
 
 showDice :: [Die] -> String
-showDice [] = ""
-showDice (d : ds)
-  | null ds = showDie d
-  | otherwise = showDie d ++ " + " ++ showDice ds
-  where
-  showDie (Const n) = show n
-  showDie (Die n t) = show n ++ "d" ++ show t
+showDice = intercalate " + " . map showDie
+  where showDie (Const n) = show n
+        showDie (Die n t) = show n ++ "d" ++ show t
 
 showResult :: [Int] -> String
-showResult [] = ""
-showResult (n : ns)
-  | null ns = show n
-  | otherwise = show n ++ " + " ++ showResult ns
+showResult = intercalate " + " . map show
 
 randomFace :: RandomGen g => Int -> Rand g Int
 randomFace t = getRandomR (1, t)
