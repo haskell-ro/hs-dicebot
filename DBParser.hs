@@ -21,9 +21,14 @@ quit = char 'q' >> mapM_ (optional . char) "uit" >> eof >> return Quit
 roll = do
   char 'r' >> mapM_ (optional . char) "oll"
   spaces
-  d <- die
+  ds <- sumDice
   eof
-  return $ Roll [d]
+  return $ Roll ds
+
+sumDice = do
+  d <- die
+  ds <- many $ spaces >> char '+' >> spaces >> die
+  return (d : ds)
 
 die = try dieVal <|> constVal
 constVal = digit `sepEndBy1` spaces >>= return . Const . read
