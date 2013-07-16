@@ -1,5 +1,5 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
-module DBParser where
+module DBParser (parseCmd) where
 
 import Text.Parsec
 

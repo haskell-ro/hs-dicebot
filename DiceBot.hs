@@ -2,6 +2,7 @@ module Main where
 
 import Network
 import System.IO
+import System.Exit (exitSuccess)
 import Text.Printf
 import Control.Monad (forever)
 import qualified Network.IRC as IRC
@@ -48,9 +49,19 @@ listen h = forever $ do
 respond :: Handle -> DiceBotCmd -> IO ()
 respond h c = case c of
   Start   -> write h $ IRC.privmsg chan "--- Session start ---"
-  Quit    -> write h $ IRC.privmsg chan "--- Session quit ---"
-  Roll _  -> write h $ IRC.privmsg chan "--- Unimplemented ---"
+  Quit    -> respQuit
+  Roll ds -> respRoll ds
   _       -> return ()
+  where
+  respQuit = do
+    write h $ IRC.privmsg chan "--- Session quit ---"
+    write h $ IRC.quit (Just "You and your friends are dead.")
+    exitSuccess
+  respRoll ds = do
+    rs <- rollDice ds
+    write h $ IRC.privmsg chan $
+      "Roll " ++ showDice ds ++ ": "
+              ++ showResult rs ++ " = " ++ show (sum rs)
 
 -- debugging utilities
 dbgOut :: String -> IO ()
