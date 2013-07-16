@@ -31,5 +31,5 @@ rollDie :: RandomGen g => Die -> Rand g [Int]
 rollDie (Const n) = return [n]
 rollDie (Die n t) = sequence . replicate n $ randomFace t
 
-rollDice :: RandomGen g => [Die] -> Rand g [Int]
-rollDice = liftM concat . mapM rollDie
+rollDice :: [Die] -> IO [Int]
+rollDice = evalRandIO . liftM concat . mapM rollDie
