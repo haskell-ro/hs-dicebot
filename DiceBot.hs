@@ -51,6 +51,7 @@ respond h c = case c of
   Start   -> write h $ IRC.privmsg chan "--- Session start ---"
   Quit    -> respQuit
   Roll ds -> respRoll ds
+  Bad cmd -> respBad cmd
   _       -> return ()
   where
   respQuit = do
@@ -62,6 +63,7 @@ respond h c = case c of
     write h $ IRC.privmsg chan $
       "Roll " ++ showDice ds ++ ": "
               ++ showResult rs ++ " = " ++ show (sum rs)
+  respBad cmd = write h . IRC.privmsg chan $ cmd ++ ": bad command"
 
 -- debugging utilities
 dbgOut :: String -> IO ()
