@@ -32,11 +32,10 @@ sumDice = do
 
 die = try dieVal <|> constVal
 constVal = digit `sepEndBy1` spaces >>= return . Const . read
-dieVal = numDies <|> oneDie
+dieVal = do
+  dn <- number <|> return 1
+  char 'd'
+  dt <- number
+  return $ Die dn dt
   where
-  oneDie = char 'd' >> digit `sepEndBy1` spaces >>= return . Die 1 . read
-  numDies = do
-    sn <- many1 digit
-    char 'd'
-    st <- digit `sepEndBy1` spaces
-    return $ Die (read sn) (read st)
+  number = fmap read $ digit `sepEndBy1` spaces
