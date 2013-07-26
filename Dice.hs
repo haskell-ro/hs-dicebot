@@ -8,7 +8,8 @@ data DiceBotCmd =
     Start
   | Quit
   | Roll { cmdDice :: [Die] }
-  | Unknown
+  | None
+  | Bad { cmdBad :: String }
   deriving (Show, Eq)
 
 data Die =

@@ -8,11 +8,11 @@ import Dice
 parseCmd :: String -> DiceBotCmd
 parseCmd s = case parse cmd "(unknown)" s of
   Right c -> c
-  _       -> Unknown
+  _       -> None
 
 cmd = do
   bang
-  start <|> quit <|> roll
+  try (start <|> quit <|> roll) <|> fmap Bad getInput
 
 bang  = char '!'
 start = char 's' >> mapM_ (optional . char) "tart" >> eof >> return Start
