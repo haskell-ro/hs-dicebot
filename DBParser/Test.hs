@@ -1,16 +1,23 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverlappingInstances #-}
+
 module DBParser.Test where
 
 -- using QuickCheck to test DBParser
 
 import Test.QuickCheck
-import Data.List (inits)
+import Data.List (inits, intersperse)
 
+import Dice
 import DBParser
 
 instance Arbitrary String where
   arbitrary = nonBadGen
+
+prop_nonbad s = case parseCmd s of
+  Bad _ -> False
+  _     -> True
 
 -----------------------------------------------------------------------------
 startGen :: Gen String
@@ -20,7 +27,8 @@ quitGen :: Gen String
 quitGen = elements . drop 2 $ inits "!quit"
 
 rollPrefixGen :: Gen String
-rollPrefixGen = elements . drop 2 $ inits "!roll"
+rollPrefixGen = elements . (++ ["!roll"]) . map (++ " ") . drop 2 . init
+              $ inits "!roll"
 
 spaces :: Gen String
 spaces = listOf $ return ' '
