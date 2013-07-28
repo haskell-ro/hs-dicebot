@@ -35,6 +35,7 @@ constVal = digit `sepEndBy1` spaces >>= return . Const . read
 dieVal = do
   dn <- number <|> return 1
   char 'd'
+  spaces
   dt <- number <|> return 6
   return $ Die dn dt
   where
