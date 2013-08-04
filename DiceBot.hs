@@ -65,6 +65,8 @@ respond h m = case msgCmd m of
   Bad cmd -> respBad cmd
   _       -> return ()
   where
+  toNick = if msgPriv m then msgFrom m else chan
+  who = if msgPriv m then "You" else msgFrom m
   respStart = write h $ IRC.privmsg chan "--- Session start ---"
   respQuit = do
     write h $ IRC.privmsg chan "--- Session quit ---"
@@ -72,12 +74,11 @@ respond h m = case msgCmd m of
     exitSuccess
   respRoll ds = do
     rs <- rollDice ds
-    write h $ IRC.privmsg chan $ msgFrom m ++ " " ++
+    write h $ IRC.privmsg toNick $ who ++ " " ++
       "rolled " ++ showDice ds ++ ": "
                 ++ showResult rs ++ " = " ++ show (sum rs)
-  respBad cmd = write h . IRC.privmsg chan $
-                  msgFrom m ++ ": "
-                            ++ cmd ++ ": bad command"
+  respBad cmd = write h . IRC.privmsg toNick $ who ++ " " ++
+      "sent " ++ cmd ++ ": bad command"
 
 mkDBMsg :: IRC.Message -> DBMsg
 mkDBMsg m = DBMsg usr cmd prv
