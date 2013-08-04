@@ -48,9 +48,8 @@ listen h = forever $ do
     Nothing -> return ()
     Just m  -> case IRC.msg_command m of
       "PRIVMSG" -> do
-        let msg = (!! 1) . IRC.msg_params $ m
-            c   = parseCmd msg
-        respond h c
+        let msg = mkDBMsg m
+        respond h msg
       -- TODO: use a library pong command
       "PING"    -> do
         let srv = head . IRC.msg_params $ m
@@ -58,24 +57,27 @@ listen h = forever $ do
         write h msg
       _         -> return ()
 
-respond :: Handle -> DiceBotCmd -> IO ()
-respond h c = case c of
-  Start   -> write h $ IRC.privmsg chan "--- Session start ---"
+respond :: Handle -> DBMsg -> IO ()
+respond h m = case msgCmd m of
+  Start   -> respStart
   Quit    -> respQuit
   Roll ds -> respRoll ds
   Bad cmd -> respBad cmd
   _       -> return ()
   where
+  respStart = write h $ IRC.privmsg chan "--- Session start ---"
   respQuit = do
     write h $ IRC.privmsg chan "--- Session quit ---"
     write h $ IRC.quit (Just "You and your friends are dead.")
     exitSuccess
   respRoll ds = do
     rs <- rollDice ds
-    write h $ IRC.privmsg chan $
-      "Roll " ++ showDice ds ++ ": "
-              ++ showResult rs ++ " = " ++ show (sum rs)
-  respBad cmd = write h . IRC.privmsg chan $ cmd ++ ": bad command"
+    write h $ IRC.privmsg chan $ msgFrom m ++ " " ++
+      "rolled " ++ showDice ds ++ ": "
+                ++ showResult rs ++ " = " ++ show (sum rs)
+  respBad cmd = write h . IRC.privmsg chan $
+                  msgFrom m ++ ": "
+                            ++ cmd ++ ": bad command"
 
 mkDBMsg :: IRC.Message -> DBMsg
 mkDBMsg m = DBMsg usr cmd prv
