@@ -10,6 +10,12 @@ import qualified Network.IRC as IRC
 import Dice
 import DBParser
 
+data DBMsg = DBMsg
+  { msgFrom :: IRC.UserName
+  , msgCmd  :: DiceBotCmd
+  , msgPriv :: Bool
+  } deriving (Show, Eq)
+
 server      = "irc.freenode.org"
 port        = 6667
 chan        = "#haskell-ro"
@@ -70,6 +76,14 @@ respond h c = case c of
       "Roll " ++ showDice ds ++ ": "
               ++ showResult rs ++ " = " ++ show (sum rs)
   respBad cmd = write h . IRC.privmsg chan $ cmd ++ ": bad command"
+
+mkDBMsg :: IRC.Message -> DBMsg
+mkDBMsg m = DBMsg usr cmd prv
+  where
+  IRC.NickName usr _ _  = maybe unknown id $ IRC.msg_prefix m
+  cmd               = parseCmd . (!! 1) . IRC.msg_params $ m
+  prv               = if (head . IRC.msg_params) m == nick then True else False
+  unknown = IRC.NickName "(unknown)" Nothing Nothing
 
 -- debugging utilities
 dbgOut :: String -> IO ()
