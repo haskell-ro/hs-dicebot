@@ -40,11 +40,17 @@ listen h = forever $ do
   --dbgIn $ show $ IRC.decode s
   case IRC.decode s of
     Nothing -> return ()
-    Just m  -> if IRC.msg_command m /= "PRIVMSG" then return ()
-        else do
+    Just m  -> case IRC.msg_command m of
+      "PRIVMSG" -> do
         let msg = (!! 1) . IRC.msg_params $ m
-            c = parseCmd msg
+            c   = parseCmd msg
         respond h c
+      -- TODO: use a library pong command
+      "PING"    -> do
+        let srv = head . IRC.msg_params $ m
+            msg = IRC.Message Nothing "PONG" [srv]
+        write h msg
+      _         -> return ()
 
 respond :: Handle -> DiceBotCmd -> IO ()
 respond h c = case c of
