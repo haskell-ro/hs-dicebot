@@ -1,6 +1,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverlappingInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module DBParser.Test where
 
@@ -42,22 +43,37 @@ rollConstGen = do
   NonNegative x <- arbitrary :: Gen (NonNegative Int)
   return $ show x
 
+-- encapsulate die nums and types in separate types
+-- XXX: safe for our purpose
+newtype DieNum = DieNum Int deriving Num
+newtype DieType = DieType Int deriving Num
+
+instance Arbitrary DieNum where
+  arbitrary  = do
+    Positive x <- arbitrary :: Gen (Positive Int)
+    return . DieNum $ x `mod` 20 + 1
+
+instance Arbitrary DieType where
+  arbitrary = do
+    Positive x <- arbitrary :: Gen (Positive Int)
+    return . DieType $ x `mod` 100 + 1
+
 -- TODO: refactor
 rollDieGen' :: Gen String
 rollDieGen' = oneof [defNT, defN, defT, nodef]
   where
   defNT = return "d"
   defN = do
-    Positive t <- arbitrary :: Gen (Positive Int)
+    DieType t <- arbitrary :: Gen DieType
     ss <- spaces
     return $ "d" ++ ss ++ show t
   defT = do
-    Positive n <- arbitrary :: Gen (Positive Int)
+    DieNum n <- arbitrary :: Gen DieNum
     ss <- spaces
     return $ show n ++ ss ++ "d"
   nodef = do
-    Positive t <- arbitrary :: Gen (Positive Int)
-    Positive n <- arbitrary :: Gen (Positive Int)
+    DieType t <- arbitrary :: Gen DieType
+    DieNum n <- arbitrary :: Gen DieNum
     ss <- spaces
     ss' <- spaces
     return $ show n ++ ss ++ "d" ++ ss' ++ show t
