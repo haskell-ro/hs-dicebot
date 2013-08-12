@@ -15,9 +15,13 @@ import DBParser
 instance Arbitrary String where
   arbitrary = nonBadGen
 
+prop_nonbad :: String -> Bool
 prop_nonbad s = case parseCmd s of
   Bad _ -> False
   _     -> True
+
+check :: IO ()
+check = quickCheck prop_nonbad
 
 -----------------------------------------------------------------------------
 startGen :: Gen String
