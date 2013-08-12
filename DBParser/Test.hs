@@ -22,7 +22,10 @@ prop_nonbad s = case parseCmd s of
   _     -> True
 
 check :: IO ()
-check = quickCheck prop_nonbad
+check = do
+  let numTests = 1000
+      testArgs = stdArgs { maxSuccess = numTests }
+  quickCheckWith testArgs prop_nonbad
 
 -----------------------------------------------------------------------------
 startGen :: Gen String
