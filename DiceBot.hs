@@ -78,7 +78,7 @@ listen = do
   forever $ do
     -- TODO: top-down refactoring
     s <- liftIO $ hGetLine h
-    liftIO $ dbgIn s
+    dbgIn s
     --dbgIn $ show $ IRC.decode s
     case IRC.decode s of
       Nothing -> return ()
@@ -125,7 +125,7 @@ write :: Handle -> IRC.Message -> IO ()
 write h m = do
   let raw = IRC.encode m
   hPrintf h "%s\r\n" raw
-  dbgOut raw
+  -- dbgOut raw
 
 mkDBMsg :: IRC.UserName -> IRC.Message -> DBMsg
 mkDBMsg n m = DBMsg usr cmd prv
@@ -136,10 +136,10 @@ mkDBMsg n m = DBMsg usr cmd prv
   unknown = IRC.NickName "(unknown)" Nothing Nothing
 
 -- debugging utilities
-dbgOut :: String -> IO ()
-dbgOut s = putStrLn $ "out> " ++ s
+dbgOut :: String -> DiceBot ()
+dbgOut s = liftIO . putStrLn $ "out> " ++ s
 -- dbgOut s = return ()
 
-dbgIn :: String -> IO ()
-dbgIn s = putStrLn $ "in> " ++ s
+dbgIn :: String -> DiceBot ()
+dbgIn s = liftIO . putStrLn $ "in> " ++ s
 -- dbgIn s = return ()
