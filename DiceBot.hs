@@ -120,7 +120,7 @@ respond m = do
 
 -- auxiliary functions
 writeChan :: String -> DiceBot ()
-writeChan s = fmap cfgChannel ask >>= write . IRC.privmsg s
+writeChan s = fmap cfgChannel ask >>= write . flip IRC.privmsg s
 
 writeNick :: IRC.UserName -> String -> DiceBot ()
 writeNick n s = write . IRC.privmsg n $ s
