@@ -43,7 +43,7 @@ data DBMsg = DBMsg
 
 -- XXX: is it safe to use generalized newtype deriving?
 newtype DiceBot a = DiceBot { runDiceBot :: ReaderT DBCfg IO a }
-  deriving (Monad, MonadIO, MonadReader DBCfg)
+  deriving (Functor, Monad, MonadIO, MonadReader DBCfg)
 
 evalDiceBot :: DBCfg -> DiceBot a -> IO a
 evalDiceBot cfg = flip runReaderT cfg . runDiceBot
