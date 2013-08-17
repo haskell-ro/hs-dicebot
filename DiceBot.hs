@@ -72,12 +72,6 @@ dbmain = do
   liftIO $ write h $ IRC.joinChan chan
   liftIO $ listen h
 
-write :: Handle -> IRC.Message -> IO ()
-write h m = do
-  let raw = IRC.encode m
-  hPrintf h "%s\r\n" raw
-  dbgOut raw
-
 listen :: Handle -> IO ()
 listen h = forever $ do
   s <- hGetLine h
@@ -119,6 +113,12 @@ respond h m = case msgCmd m of
                 ++ showResult rs ++ " = " ++ show (sum rs)
   respBad cmd = write h . IRC.privmsg toNick $ who ++ " " ++
       "sent " ++ cmd ++ ": bad command"
+
+write :: Handle -> IRC.Message -> IO ()
+write h m = do
+  let raw = IRC.encode m
+  hPrintf h "%s\r\n" raw
+  dbgOut raw
 
 mkDBMsg :: IRC.Message -> DBMsg
 mkDBMsg m = DBMsg usr cmd prv
