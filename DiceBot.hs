@@ -8,7 +8,6 @@ import System.Exit (exitSuccess)
 import Text.Printf
 import Control.Monad (forever)
 import Control.Monad.Reader
-import Control.Arrow ((&&&))
 import qualified Network.IRC as IRC
 
 import Dice
