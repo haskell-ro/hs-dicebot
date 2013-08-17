@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Main where
 
 import Network
@@ -5,17 +7,13 @@ import System.IO
 import System.Exit (exitSuccess)
 import Text.Printf
 import Control.Monad (forever)
+import Control.Monad.Reader
 import qualified Network.IRC as IRC
 
 import Dice
 import DBParser
 
-data DBMsg = DBMsg
-  { msgFrom :: IRC.UserName
-  , msgCmd  :: DiceBotCmd
-  , msgPriv :: Bool
-  } deriving (Show, Eq)
-
+-- DiceBot configuration
 data DBCfg = DBCfg
   { cfgServer   :: IRC.ServerName
   , cfgPort     :: PortNumber
@@ -24,7 +22,6 @@ data DBCfg = DBCfg
   , cfgHandle   :: Handle
   } deriving Show
 
--- DiceBot configuration
 defaultDBCfg = DBCfg
   { cfgServer   = "irc.freenode.org"
   , cfgPort     = 6667
@@ -36,6 +33,17 @@ defaultDBCfg = DBCfg
 hostname    = cfgNickname defaultDBCfg
 servername  = "*"
 realname    = "A Haskell Dice Bot"
+
+-- useful structures for the DiceBot app
+data DBMsg = DBMsg
+  { msgFrom :: IRC.UserName
+  , msgCmd  :: DiceBotCmd
+  , msgPriv :: Bool
+  } deriving (Show, Eq)
+
+-- XXX: is it safe to use generalized newtype deriving?
+newtype DiceBot a = DiceBot { runDiceBot :: ReaderT DBCfg IO a }
+  deriving (Monad, MonadIO, MonadReader DBCfg)
 
 main :: IO ()
 main = do
