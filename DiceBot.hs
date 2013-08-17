@@ -99,7 +99,7 @@ respond m = do
     Bad cmd -> respBad cmd
     _       -> return ()
   where
-  toNick = if msgPriv m then msgFrom m else chan
+  toNick = if msgPriv m then writeNick $ msgFrom m else writeChan
   who = if msgPriv m then "You" else msgFrom m
 
   -- response functions
@@ -110,10 +110,10 @@ respond m = do
     dbexit
   respRoll ds = do
     rs <- roll ds
-    writeNick toNick $ who ++ " " ++
+    toNick $ who ++ " " ++
       "rolled " ++ showDice ds ++ ": "
                 ++ showResult rs ++ " = " ++ show (sum rs)
-  respBad cmd = writeNick toNick $ who ++ " " ++
+  respBad cmd = toNick $ who ++ " " ++
       "sent " ++ cmd ++ ": bad command"
 
 -- auxiliary functions
