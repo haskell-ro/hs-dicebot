@@ -67,40 +67,39 @@ dbmain = do
   let nick    = cfgNickname cfg
       chan    = cfgChannel cfg
       h       = cfgHandle cfg
-  liftIO $ write h $ IRC.nick nick
-  liftIO $ write h $ IRC.user nick hostname servername realname
-  liftIO $ write h $ IRC.joinChan chan
+  write $ IRC.nick nick
+  write $ IRC.user nick hostname servername realname
+  write $ IRC.joinChan chan
   listen
 
 listen :: DiceBot ()
-listen = do
-  (h, n) <- fmap (cfgHandle &&& cfgNickname) ask
-  forever $ do
-    -- TODO: top-down refactoring
-    s <- liftIO $ hGetLine h
-    dbgIn s
-    --dbgIn $ show $ IRC.decode s
-    case IRC.decode s of
-      Nothing -> return ()
-      Just m  -> case IRC.msg_command m of
-        "PRIVMSG" -> do
-          let msg = mkDBMsg n m
-          respond msg
-        -- TODO: use a library pong command
-        "PING"    -> do
-          let srv = head . IRC.msg_params $ m
-              msg = IRC.Message Nothing "PONG" [srv]
-          liftIO $ write h msg
-        _         -> return ()
+listen = forever $ do
+  -- TODO: wrap this in another function
+  s <- fmap cfgHandle ask >>= liftIO . hGetLine
+  dbgIn s
+  --dbgIn $ show $ IRC.decode s
+  case IRC.decode s of
+    Nothing -> return ()
+    Just m  -> case IRC.msg_command m of
+      "PRIVMSG" -> do
+        n <- fmap cfgNickname ask
+        let msg = mkDBMsg n m
+        respond msg
+      -- TODO: use a library pong command
+      "PING"    -> do
+        let srv = head . IRC.msg_params $ m
+            msg = IRC.Message Nothing "PONG" [srv]
+        write msg
+      _         -> return ()
 
 respond :: DBMsg -> DiceBot ()
 respond m = do
   h <- fmap cfgHandle ask
   case msgCmd m of
-    Start   -> respStart h
-    Quit    -> respQuit h
-    Roll ds -> respRoll ds h
-    Bad cmd -> respBad cmd h
+    Start   -> respStart
+    Quit    -> respQuit
+    Roll ds -> respRoll ds
+    Bad cmd -> respBad cmd
     _       -> return ()
   where
   chan = cfgChannel defaultDBCfg
@@ -108,24 +107,27 @@ respond m = do
   who = if msgPriv m then "You" else msgFrom m
 
   -- rsponse functions
-  respStart h = liftIO $ write h $ IRC.privmsg chan "--- Session start ---"
-  respQuit h = do
-    liftIO $ write h $ IRC.privmsg chan "--- Session quit ---"
-    liftIO $ write h $ IRC.quit (Just "You and your friends are dead.")
+  respStart = write $ IRC.privmsg chan "--- Session start ---"
+  respQuit = do
+    write $ IRC.privmsg chan "--- Session quit ---"
+    write $ IRC.quit (Just "You and your friends are dead.")
+    -- TODO: wrap this in another function
     liftIO $ exitSuccess
-  respRoll ds h = do
+  respRoll ds = do
+    -- TODO: wrap this in another function
     rs <- liftIO $ rollDice ds
-    liftIO . write h . IRC.privmsg toNick $ who ++ " " ++
+    write . IRC.privmsg toNick $ who ++ " " ++
       "rolled " ++ showDice ds ++ ": "
                 ++ showResult rs ++ " = " ++ show (sum rs)
-  respBad cmd h = liftIO . write h . IRC.privmsg toNick $ who ++ " " ++
+  respBad cmd = write . IRC.privmsg toNick $ who ++ " " ++
       "sent " ++ cmd ++ ": bad command"
 
-write :: Handle -> IRC.Message -> IO ()
-write h m = do
+write :: IRC.Message -> DiceBot ()
+write m = do
   let raw = IRC.encode m
-  hPrintf h "%s\r\n" raw
-  -- dbgOut raw
+  h <- fmap cfgHandle ask
+  liftIO $ hPrintf h "%s\r\n" raw
+  dbgOut raw
 
 mkDBMsg :: IRC.UserName -> IRC.Message -> DBMsg
 mkDBMsg n m = DBMsg usr cmd prv
