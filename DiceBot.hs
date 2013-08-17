@@ -45,18 +45,32 @@ data DBMsg = DBMsg
 newtype DiceBot a = DiceBot { runDiceBot :: ReaderT DBCfg IO a }
   deriving (Monad, MonadIO, MonadReader DBCfg)
 
+evalDiceBot :: DBCfg -> DiceBot a -> IO a
+evalDiceBot cfg = flip runReaderT cfg . runDiceBot
+
+-- TODO: get config from command line arguments
 main :: IO ()
 main = do
   let server  = cfgServer defaultDBCfg
       port    = cfgPort defaultDBCfg
-      nick    = cfgNickname defaultDBCfg
-      chan    = cfgChannel defaultDBCfg
   h <- connectTo server (PortNumber port)
   hSetBuffering h NoBuffering
-  write h $ IRC.nick nick
-  write h $ IRC.user nick hostname servername realname
-  write h $ IRC.joinChan chan
-  listen h
+
+  -- set up handle and run
+  let cfg = defaultDBCfg { cfgHandle = h }
+  evalDiceBot cfg dbmain
+
+dbmain :: DiceBot ()
+dbmain = do
+  cfg <- ask
+  let nick    = cfgNickname cfg
+      chan    = cfgChannel cfg
+      h       = cfgHandle cfg
+  -- TODO: top-down refactoring
+  liftIO $ write h $ IRC.nick nick
+  liftIO $ write h $ IRC.user nick hostname servername realname
+  liftIO $ write h $ IRC.joinChan chan
+  liftIO $ listen h
 
 write :: Handle -> IRC.Message -> IO ()
 write h m = do
