@@ -74,8 +74,7 @@ dbmain = do
 
 listen :: DiceBot ()
 listen = forever $ do
-  -- TODO: wrap this in another function
-  s <- fmap cfgHandle ask >>= liftIO . hGetLine
+  s <- dbGetLine
   dbgIn s
   --dbgIn $ show $ IRC.decode s
   case IRC.decode s of
@@ -94,7 +93,6 @@ listen = forever $ do
 
 respond :: DBMsg -> DiceBot ()
 respond m = do
-  h <- fmap cfgHandle ask
   case msgCmd m of
     Start   -> respStart
     Quit    -> respQuit
@@ -102,25 +100,29 @@ respond m = do
     Bad cmd -> respBad cmd
     _       -> return ()
   where
-  chan = cfgChannel defaultDBCfg
   toNick = if msgPriv m then msgFrom m else chan
   who = if msgPriv m then "You" else msgFrom m
 
-  -- rsponse functions
-  respStart = write $ IRC.privmsg chan "--- Session start ---"
+  -- response functions
+  respStart = writeChan "--- Session start ---"
   respQuit = do
-    write $ IRC.privmsg chan "--- Session quit ---"
+    writeChan "--- Session quit ---"
     write $ IRC.quit (Just "You and your friends are dead.")
-    -- TODO: wrap this in another function
-    liftIO $ exitSuccess
+    dbexit
   respRoll ds = do
-    -- TODO: wrap this in another function
-    rs <- liftIO $ rollDice ds
-    write . IRC.privmsg toNick $ who ++ " " ++
+    rs <- roll ds
+    writeNick toNick $ who ++ " " ++
       "rolled " ++ showDice ds ++ ": "
                 ++ showResult rs ++ " = " ++ show (sum rs)
-  respBad cmd = write . IRC.privmsg toNick $ who ++ " " ++
+  respBad cmd = writeNick toNick $ who ++ " " ++
       "sent " ++ cmd ++ ": bad command"
+
+-- auxiliary functions
+writeChan :: String -> DiceBot ()
+writeChan s = fmap cfgChannel ask >>= write . IRC.privmsg s
+
+writeNick :: IRC.UserName -> String -> DiceBot ()
+writeNick n s = write . IRC.privmsg n $ s
 
 write :: IRC.Message -> DiceBot ()
 write m = do
@@ -128,6 +130,15 @@ write m = do
   h <- fmap cfgHandle ask
   liftIO $ hPrintf h "%s\r\n" raw
   dbgOut raw
+
+roll :: [Die] -> DiceBot [Int]
+roll = liftIO . rollDice
+
+dbGetLine :: DiceBot String
+dbGetLine = fmap cfgHandle ask >>= liftIO . hGetLine
+
+dbexit :: DiceBot ()
+dbexit = liftIO $ exitSuccess
 
 mkDBMsg :: IRC.UserName -> IRC.Message -> DBMsg
 mkDBMsg n m = DBMsg usr cmd prv
