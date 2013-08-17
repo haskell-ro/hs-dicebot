@@ -84,7 +84,7 @@ listen = do
       Just m  -> case IRC.msg_command m of
         "PRIVMSG" -> do
           let msg = mkDBMsg m
-          liftIO $ respond h msg
+          respond msg
         -- TODO: use a library pong command
         "PING"    -> do
           let srv = head . IRC.msg_params $ m
@@ -92,28 +92,32 @@ listen = do
           liftIO $ write h msg
         _         -> return ()
 
-respond :: Handle -> DBMsg -> IO ()
-respond h m = case msgCmd m of
-  Start   -> respStart
-  Quit    -> respQuit
-  Roll ds -> respRoll ds
-  Bad cmd -> respBad cmd
-  _       -> return ()
+respond :: DBMsg -> DiceBot ()
+respond m = do
+  h <- fmap cfgHandle ask
+  case msgCmd m of
+    Start   -> respStart h
+    Quit    -> respQuit h
+    Roll ds -> respRoll ds h
+    Bad cmd -> respBad cmd h
+    _       -> return ()
   where
   chan = cfgChannel defaultDBCfg
   toNick = if msgPriv m then msgFrom m else chan
   who = if msgPriv m then "You" else msgFrom m
-  respStart = write h $ IRC.privmsg chan "--- Session start ---"
-  respQuit = do
-    write h $ IRC.privmsg chan "--- Session quit ---"
-    write h $ IRC.quit (Just "You and your friends are dead.")
-    exitSuccess
-  respRoll ds = do
-    rs <- rollDice ds
-    write h $ IRC.privmsg toNick $ who ++ " " ++
+
+  -- rsponse functions
+  respStart h = liftIO $ write h $ IRC.privmsg chan "--- Session start ---"
+  respQuit h = do
+    liftIO $ write h $ IRC.privmsg chan "--- Session quit ---"
+    liftIO $ write h $ IRC.quit (Just "You and your friends are dead.")
+    liftIO $ exitSuccess
+  respRoll ds h = do
+    rs <- liftIO $ rollDice ds
+    liftIO . write h . IRC.privmsg toNick $ who ++ " " ++
       "rolled " ++ showDice ds ++ ": "
                 ++ showResult rs ++ " = " ++ show (sum rs)
-  respBad cmd = write h . IRC.privmsg toNick $ who ++ " " ++
+  respBad cmd h = liftIO . write h . IRC.privmsg toNick $ who ++ " " ++
       "sent " ++ cmd ++ ": bad command"
 
 write :: Handle -> IRC.Message -> IO ()
