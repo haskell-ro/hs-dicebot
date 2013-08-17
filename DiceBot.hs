@@ -8,6 +8,7 @@ import System.Exit (exitSuccess)
 import Text.Printf
 import Control.Monad (forever)
 import Control.Monad.Reader
+import Control.Arrow ((&&&))
 import qualified Network.IRC as IRC
 
 import Dice
@@ -73,7 +74,7 @@ dbmain = do
 
 listen :: DiceBot ()
 listen = do
-  h <- fmap cfgHandle ask
+  (h, n) <- fmap (cfgHandle &&& cfgNickname) ask
   forever $ do
     -- TODO: top-down refactoring
     s <- liftIO $ hGetLine h
@@ -83,7 +84,7 @@ listen = do
       Nothing -> return ()
       Just m  -> case IRC.msg_command m of
         "PRIVMSG" -> do
-          let msg = mkDBMsg m
+          let msg = mkDBMsg n m
           respond msg
         -- TODO: use a library pong command
         "PING"    -> do
@@ -126,13 +127,12 @@ write h m = do
   hPrintf h "%s\r\n" raw
   dbgOut raw
 
-mkDBMsg :: IRC.Message -> DBMsg
-mkDBMsg m = DBMsg usr cmd prv
+mkDBMsg :: IRC.UserName -> IRC.Message -> DBMsg
+mkDBMsg n m = DBMsg usr cmd prv
   where
-  nick = cfgNickname defaultDBCfg
   IRC.NickName usr _ _  = maybe unknown id $ IRC.msg_prefix m
   cmd               = parseCmd . (!! 1) . IRC.msg_params $ m
-  prv               = if (head . IRC.msg_params) m == nick then True else False
+  prv               = if (head . IRC.msg_params) m == n then True else False
   unknown = IRC.NickName "(unknown)" Nothing Nothing
 
 -- debugging utilities
