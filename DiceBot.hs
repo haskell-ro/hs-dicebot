@@ -6,7 +6,7 @@ import Network
 import System.IO
 import System.Exit (exitSuccess)
 import Text.Printf
-import Control.Monad (forever)
+import Control.Monad (forever, when)
 import Control.Monad.Reader
 import qualified Network.IRC as IRC
 
@@ -20,6 +20,7 @@ data DBCfg = DBCfg
   , cfgChannel  :: IRC.Channel
   , cfgNickname :: IRC.UserName
   , cfgHandle   :: Handle
+  , cfgDebug    :: Bool
   } deriving Show
 
 defaultDBCfg = DBCfg
@@ -28,6 +29,7 @@ defaultDBCfg = DBCfg
   , cfgChannel  = "#haskell-ro"
   , cfgNickname = "hsDiceBot"
   , cfgHandle   = error "No default socket available"
+  , cfgDebug    = True
   }
 
 hostname    = cfgNickname defaultDBCfg
@@ -149,9 +151,11 @@ mkDBMsg n m = DBMsg usr cmd prv
 
 -- debugging utilities
 dbgOut :: String -> DiceBot ()
-dbgOut s = liftIO . putStrLn $ "out> " ++ s
--- dbgOut s = return ()
+dbgOut s = do
+  debug <- fmap cfgDebug ask
+  when debug $ liftIO . putStrLn $ "out> " ++ s
 
 dbgIn :: String -> DiceBot ()
-dbgIn s = liftIO . putStrLn $ "in> " ++ s
--- dbgIn s = return ()
+dbgIn s = do
+  debug <- fmap cfgDebug ask
+  when debug $ liftIO . putStrLn $ "in> " ++ s
