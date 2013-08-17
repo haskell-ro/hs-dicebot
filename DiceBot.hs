@@ -66,29 +66,31 @@ dbmain = do
   let nick    = cfgNickname cfg
       chan    = cfgChannel cfg
       h       = cfgHandle cfg
-  -- TODO: top-down refactoring
   liftIO $ write h $ IRC.nick nick
   liftIO $ write h $ IRC.user nick hostname servername realname
   liftIO $ write h $ IRC.joinChan chan
-  liftIO $ listen h
+  listen
 
-listen :: Handle -> IO ()
-listen h = forever $ do
-  s <- hGetLine h
-  dbgIn s
-  --dbgIn $ show $ IRC.decode s
-  case IRC.decode s of
-    Nothing -> return ()
-    Just m  -> case IRC.msg_command m of
-      "PRIVMSG" -> do
-        let msg = mkDBMsg m
-        respond h msg
-      -- TODO: use a library pong command
-      "PING"    -> do
-        let srv = head . IRC.msg_params $ m
-            msg = IRC.Message Nothing "PONG" [srv]
-        write h msg
-      _         -> return ()
+listen :: DiceBot ()
+listen = do
+  h <- fmap cfgHandle ask
+  forever $ do
+    -- TODO: top-down refactoring
+    s <- liftIO $ hGetLine h
+    liftIO $ dbgIn s
+    --dbgIn $ show $ IRC.decode s
+    case IRC.decode s of
+      Nothing -> return ()
+      Just m  -> case IRC.msg_command m of
+        "PRIVMSG" -> do
+          let msg = mkDBMsg m
+          liftIO $ respond h msg
+        -- TODO: use a library pong command
+        "PING"    -> do
+          let srv = head . IRC.msg_params $ m
+              msg = IRC.Message Nothing "PONG" [srv]
+          liftIO $ write h msg
+        _         -> return ()
 
 respond :: Handle -> DBMsg -> IO ()
 respond h m = case msgCmd m of
