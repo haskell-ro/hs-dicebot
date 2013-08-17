@@ -16,16 +16,33 @@ data DBMsg = DBMsg
   , msgPriv :: Bool
   } deriving (Show, Eq)
 
-server      = "irc.freenode.org"
-port        = 6667
-chan        = "#haskell-ro"
-nick        = "hsDiceBot"
-hostname    = nick
+data DBCfg = DBCfg
+  { cfgServer   :: IRC.ServerName
+  , cfgPort     :: PortNumber
+  , cfgChannel  :: IRC.Channel
+  , cfgNickname :: IRC.UserName
+  , cfgHandle   :: Handle
+  } deriving Show
+
+-- DiceBot configuration
+defaultDBCfg = DBCfg
+  { cfgServer   = "irc.freenode.org"
+  , cfgPort     = 6667
+  , cfgChannel  = "#haskell-ro"
+  , cfgNickname = "hsDiceBot"
+  , cfgHandle   = error "No default socket available"
+  }
+
+hostname    = cfgNickname defaultDBCfg
 servername  = "*"
 realname    = "A Haskell Dice Bot"
 
 main :: IO ()
 main = do
+  let server  = cfgServer defaultDBCfg
+      port    = cfgPort defaultDBCfg
+      nick    = cfgNickname defaultDBCfg
+      chan    = cfgChannel defaultDBCfg
   h <- connectTo server (PortNumber port)
   hSetBuffering h NoBuffering
   write h $ IRC.nick nick
@@ -65,6 +82,7 @@ respond h m = case msgCmd m of
   Bad cmd -> respBad cmd
   _       -> return ()
   where
+  chan = cfgChannel defaultDBCfg
   toNick = if msgPriv m then msgFrom m else chan
   who = if msgPriv m then "You" else msgFrom m
   respStart = write h $ IRC.privmsg chan "--- Session start ---"
@@ -83,6 +101,7 @@ respond h m = case msgCmd m of
 mkDBMsg :: IRC.Message -> DBMsg
 mkDBMsg m = DBMsg usr cmd prv
   where
+  nick = cfgNickname defaultDBCfg
   IRC.NickName usr _ _  = maybe unknown id $ IRC.msg_prefix m
   cmd               = parseCmd . (!! 1) . IRC.msg_params $ m
   prv               = if (head . IRC.msg_params) m == nick then True else False
