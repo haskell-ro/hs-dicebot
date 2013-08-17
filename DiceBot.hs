@@ -29,7 +29,7 @@ defaultDBCfg = DBCfg
   , cfgChannel  = "#haskell-ro"
   , cfgNickname = "hsDiceBot"
   , cfgHandle   = error "No default socket available"
-  , cfgDebug    = True
+  , cfgDebug    = False
   }
 
 hostname    = cfgNickname defaultDBCfg
